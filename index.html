@@ -1876,7 +1876,12 @@
                         }
                     }
                     if (headerRowIndex !== -1) {
-                        rawData = rowsRaw.slice(headerRowIndex);
+                        // FIX: Usar los headers reales (de rowsRaw[headerRowIndex]) como rawData[0]
+                        // pero mantener TODOS los rows de gviz para que rawData[n] → sheet row n+1
+                        // (misma alineación que la carga normal)
+                        const actualHeaders = rowsRaw[headerRowIndex];
+                        rawData = [actualHeaders, ...rowsRaw];
+                        console.warn('FALLBACK loading path usado. Headers encontrados en rowsRaw[' + headerRowIndex + ']. Alineación corregida.');
                     } else {
                         rawData = [gvizHeaders, ...rowsRaw];
                     }
@@ -5952,6 +5957,12 @@
         window.updateRow = function(rowIndex, colName, value, selectElement) {
             // Log para debugging
             console.log('updateRow llamado:', {rowIndex, colName, value});
+            
+            // PROTECCIÓN: No permitir escritura en la fila de encabezados (rawData[0])
+            if (rowIndex < 1 || !rawData[rowIndex]) {
+                console.error('PROTECCIÓN: Intento de escribir en fila inválida o encabezados. rowIndex=' + rowIndex + ', colName=' + colName + ', value=' + value);
+                return;
+            }
             
             if (colName.includes('estado_') || (typeof colName === 'string' && colName.toUpperCase() === 'STATUS')) {
                 selectElement.className = "table-select";
